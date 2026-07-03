@@ -1,0 +1,39 @@
+# CMake build directories
+build/
+cmake-build-*/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Ninja / Make
+*.ninja
+.ninja_*
+Makefile
+
+# Build artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+
+# Debug symbols
+*.pdb
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Vim
+*.swp
+*.swo
