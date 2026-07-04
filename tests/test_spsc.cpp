@@ -2,130 +2,129 @@
 // Created by rahul on 7/3/26.
 //
 
-#include <cassert>
-#include <iostream>
 #include <thread>
 
+#include <gtest/gtest.h>
 #include "lockfree/spsc_queue.h"
 
-void test_empty_queue() {
+TEST(SPSCQueue, EmptyQueue) {
     spsc_queue<int, 8> q;
 
     int x;
-    assert(!q.pop(x));
+    EXPECT_FALSE(q.pop(x));
 }
 
-void test_push_pop() {
+TEST(SPSCQueue, PushPop) {
     spsc_queue<int, 8> q;
 
-    assert(q.push(42));
+    EXPECT_TRUE(q.push(42));
 
     int x;
-    assert(q.pop(x));
-    assert(x == 42);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 42);
 }
 
-void test_fifo_order() {
+TEST(SPSCQueue, FIFOOrder) {
     spsc_queue<int, 8> q;
 
     for (int i = 0; i < 5; ++i)
-        assert(q.push(i));
+        EXPECT_TRUE(q.push(i));
 
     for (int i = 0; i < 5; ++i) {
         int x;
-        assert(q.pop(x));
-        assert(x == i);
+        EXPECT_TRUE(q.pop(x));
+        EXPECT_EQ(x, i);
     }
 }
 
-void test_empty_after_pop() {
+TEST(SPSCQueue, EmptyAfterPop) {
     spsc_queue<int, 8> q;
 
-    assert(q.push(10));
+    EXPECT_TRUE(q.push(10));
 
     int x;
-    assert(q.pop(x));
-    assert(x == 10);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 10);
 
-    assert(!q.pop(x));
+    EXPECT_FALSE(q.pop(x));
 }
 
-void test_full_queue() {
+TEST(SPSCQueue, FullQueue) {
     spsc_queue<int, 8> q;
 
-    // Assuming one slot is left empty to distinguish full from empty.
+    // Capacity is effectively Capacity - 1.
     for (int i = 0; i < 7; ++i)
-        assert(q.push(i));
+        EXPECT_TRUE(q.push(i));
 
-    assert(!q.push(100));
+    EXPECT_FALSE(q.push(100));
 }
 
-void test_fill_empty_fill() {
+TEST(SPSCQueue, FillEmptyFill) {
     spsc_queue<int, 8> q;
 
     for (int round = 0; round < 10; ++round) {
 
         for (int i = 0; i < 7; ++i)
-            assert(q.push(i));
+            EXPECT_TRUE(q.push(i));
 
         for (int i = 0; i < 7; ++i) {
             int x;
-            assert(q.pop(x));
-            assert(x == i);
+            EXPECT_TRUE(q.pop(x));
+            EXPECT_EQ(x, i);
         }
 
         int x;
-        assert(!q.pop(x));
+        EXPECT_FALSE(q.pop(x));
     }
 }
 
-void test_wraparound() {
+TEST(SPSCQueue, WrapAround) {
     spsc_queue<int, 8> q;
 
     for (int i = 0; i < 1000; ++i) {
-        assert(q.push(i));
+        EXPECT_TRUE(q.push(i));
 
         int x;
-        assert(q.pop(x));
-        assert(x == i);
+        EXPECT_TRUE(q.pop(x));
+        EXPECT_EQ(x, i);
     }
 }
 
-void test_interleaved() {
+TEST(SPSCQueue, Interleaved) {
     spsc_queue<int, 8> q;
 
     int x;
 
-    assert(q.push(1));
-    assert(q.push(2));
+    EXPECT_TRUE(q.push(1));
+    EXPECT_TRUE(q.push(2));
 
-    assert(q.pop(x));
-    assert(x == 1);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 1);
 
-    assert(q.push(3));
+    EXPECT_TRUE(q.push(3));
 
-    assert(q.pop(x));
-    assert(x == 2);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 2);
 
-    assert(q.pop(x));
-    assert(x == 3);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 3);
 
-    assert(!q.pop(x));
+    EXPECT_FALSE(q.pop(x));
 }
 
-void test_many_cycles() {
+TEST(SPSCQueue, ManyCycles) {
     spsc_queue<int, 8> q;
 
     for (int i = 0; i < 10000; ++i) {
-        assert(q.push(i));
+        EXPECT_TRUE(q.push(i));
 
         int x;
-        assert(q.pop(x));
-        assert(x == i);
+        EXPECT_TRUE(q.pop(x));
+        EXPECT_EQ(x, i);
     }
 }
 
-void test_spsc_concurrent() {
+TEST(SPSCQueue, ConcurrentProducerConsumer) {
     constexpr int N = 1'000'000;
 
     spsc_queue<int, 1024> q;
@@ -146,37 +145,10 @@ void test_spsc_concurrent() {
                 std::this_thread::yield();
             }
 
-            assert(x == i);
+            EXPECT_EQ(x, i);
         }
     });
 
     producer.join();
     consumer.join();
-}
-
-template <typename TestFunc>
-void run_test(const char* name, TestFunc test) {
-    std::cout << "[ RUN      ] " << name << '\n';
-    test();
-    std::cout << "[       OK ] " << name << "\n";
-}
-
-int main() {
-    run_test("EmptyQueue", test_empty_queue);
-    run_test("PushPop", test_push_pop);
-    run_test("FIFOOrder", test_fifo_order);
-    run_test("EmptyAfterPop", test_empty_after_pop);
-    run_test("FullQueue", test_full_queue);
-    run_test("FillEmptyFill", test_fill_empty_fill);
-    run_test("WrapAround", test_wraparound);
-    run_test("Interleaved", test_interleaved);
-    run_test("ManyCycles", test_many_cycles);
-
-    run_test("ConcurrentProducerConsumer", test_spsc_concurrent);
-
-    std::cout << "\n=====================================\n";
-    std::cout << "All tests passed successfully!\n";
-    std::cout << "=====================================\n";
-
-    return 0;
 }
