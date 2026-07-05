@@ -30,6 +30,8 @@ Makefile
 # IDE
 .idea/
 .vscode/
+.codex/
+.agents/
 
 # macOS
 .DS_Store

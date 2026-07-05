@@ -29,17 +29,10 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-FetchContent_Declare(
-    benchmark
-    URL https://github.com/google/benchmark/archive/refs/tags/v1.9.1.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(
     googletest
-    benchmark
 )
 
 # ----------------------------------------
@@ -67,7 +60,6 @@ add_executable(benchmark_spsc
 target_link_libraries(benchmark_spsc
     PRIVATE
         lockfree
-        benchmark::benchmark
 )
 
 # ----------------------------------------

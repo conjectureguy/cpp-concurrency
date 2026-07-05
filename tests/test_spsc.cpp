@@ -2,6 +2,7 @@
 // Created by rahul on 7/3/26.
 //
 
+#include <atomic>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -57,6 +58,24 @@ TEST(SPSCQueue, FullQueue) {
         EXPECT_TRUE(q.push(i));
 
     EXPECT_FALSE(q.push(100));
+}
+
+TEST(SPSCQueue, RejectsPushWhenFullWithoutOverwriting) {
+    spsc_queue<int, 8> q;
+
+    for (int i = 0; i < 7; ++i)
+        EXPECT_TRUE(q.push(i));
+
+    EXPECT_FALSE(q.push(100));
+
+    for (int i = 0; i < 7; ++i) {
+        int x;
+        EXPECT_TRUE(q.pop(x));
+        EXPECT_EQ(x, i);
+    }
+
+    int x;
+    EXPECT_FALSE(q.pop(x));
 }
 
 TEST(SPSCQueue, FillEmptyFill) {
@@ -151,4 +170,82 @@ TEST(SPSCQueue, ConcurrentProducerConsumer) {
 
     producer.join();
     consumer.join();
+}
+
+TEST(SPSCQueue, ConcurrentProducerConsumerNoLoss) {
+    constexpr int N = 1'000'000;
+
+    spsc_queue<int, 1024> q;
+    std::atomic<bool> valid{true};
+    std::atomic<int> consumed{0};
+
+    std::thread producer([&]() {
+        for (int i = 0; i < N; ++i) {
+            while (!q.push(i)) {
+                std::this_thread::yield();
+            }
+        }
+    });
+
+    std::thread consumer([&]() {
+        for (int i = 0; i < N; ++i) {
+            int x;
+
+            while (!q.pop(x)) {
+                std::this_thread::yield();
+            }
+
+            if (x != i) {
+                valid.store(false);
+            }
+
+            consumed.fetch_add(1);
+        }
+    });
+
+    producer.join();
+    consumer.join();
+
+    EXPECT_TRUE(valid.load());
+    EXPECT_EQ(consumed.load(), N);
+    EXPECT_TRUE(q.empty());
+}
+
+TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
+    constexpr int N = 100'000;
+
+    spsc_queue<int, 8> q;
+    std::atomic<bool> valid{true};
+    std::atomic<int> consumed{0};
+
+    std::thread producer([&]() {
+        for (int i = 0; i < N; ++i) {
+            while (!q.push(i)) {
+                std::this_thread::yield();
+            }
+        }
+    });
+
+    std::thread consumer([&]() {
+        for (int i = 0; i < N; ++i) {
+            int x;
+
+            while (!q.pop(x)) {
+                std::this_thread::yield();
+            }
+
+            if (x != i) {
+                valid.store(false);
+            }
+
+            consumed.fetch_add(1);
+        }
+    });
+
+    producer.join();
+    consumer.join();
+
+    EXPECT_TRUE(valid.load());
+    EXPECT_EQ(consumed.load(), N);
+    EXPECT_TRUE(q.empty());
 }
