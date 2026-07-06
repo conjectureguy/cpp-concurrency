@@ -74,7 +74,10 @@ endif()
 
 add_executable(benchmark_spsc
     benchmarks/benchmark_spsc.cpp
-        include/lockfree/spsc_queue.h
+    include/lockfree/lock_based_spsc_queue.h
+    include/lockfree/recursive_mutex_spsc_queue.h
+    include/lockfree/spsc_queue.h
+    include/lockfree/spsc_variants.h
 )
 
 target_link_libraries(benchmark_spsc

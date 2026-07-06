@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "lockfree/lock_based_spsc_queue.h"
+#include "lockfree/recursive_mutex_spsc_queue.h"
 #include "lockfree/spsc_queue.h"
 
 struct lock_free_spsc_variant {
@@ -21,12 +22,20 @@ struct lock_based_spsc_variant {
     using queue = lock_based_spsc_queue<T, Capacity>;
 };
 
+struct recursive_mutex_spsc_variant {
+    static constexpr const char* name = "recursive_mutex_spsc";
+
+    template <typename T, std::size_t Capacity>
+    using queue = recursive_mutex_spsc_queue<T, Capacity>;
+};
+
 template <typename... Variants>
 struct spsc_variant_list {};
 
 using registered_spsc_variants = spsc_variant_list<
     lock_free_spsc_variant,
-    lock_based_spsc_variant
+    lock_based_spsc_variant,
+    recursive_mutex_spsc_variant
 >;
 
 template <typename Function, typename... Variants>

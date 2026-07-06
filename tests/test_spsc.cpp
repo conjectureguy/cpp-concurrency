@@ -142,6 +142,36 @@ TYPED_TEST(SPSCQueueTest, FullQueue) {
     EXPECT_FALSE(q.push(100));
 }
 
+TYPED_TEST(SPSCQueueTest, EmptyAndFullReportCurrentState) {
+    QueueFor<TypeParam, int, 4> q;
+
+    EXPECT_TRUE(q.empty());
+    EXPECT_FALSE(q.full());
+
+    EXPECT_TRUE(q.push(1));
+    EXPECT_FALSE(q.empty());
+    EXPECT_FALSE(q.full());
+
+    EXPECT_TRUE(q.push(2));
+    EXPECT_TRUE(q.push(3));
+    EXPECT_FALSE(q.empty());
+    EXPECT_TRUE(q.full());
+    EXPECT_FALSE(q.push(4));
+
+    int x;
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 1);
+    EXPECT_FALSE(q.empty());
+    EXPECT_FALSE(q.full());
+
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 2);
+    EXPECT_TRUE(q.pop(x));
+    EXPECT_EQ(x, 3);
+    EXPECT_TRUE(q.empty());
+    EXPECT_FALSE(q.full());
+}
+
 TYPED_TEST(SPSCQueueTest, RejectsPushWhenFullWithoutOverwriting) {
     QueueFor<TypeParam, int, 8> q;
 
