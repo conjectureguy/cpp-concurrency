@@ -8,7 +8,7 @@
 #include <thread>
 
 #include <gtest/gtest.h>
-#include "lockfree/lock_based_spsc_queue.h"
+#include "lockfree/spsc_queue.h"
 
 namespace {
 
@@ -73,14 +73,14 @@ void run_started_pair(ProducerFunction producer_body, ConsumerFunction consumer_
 } // namespace
 
 TEST(SPSCQueue, EmptyQueue) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     int x;
     EXPECT_FALSE(q.pop(x));
 }
 
 TEST(SPSCQueue, PushPop) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     EXPECT_TRUE(q.push(42));
 
@@ -90,7 +90,7 @@ TEST(SPSCQueue, PushPop) {
 }
 
 TEST(SPSCQueue, FIFOOrder) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     for (int i = 0; i < 5; ++i)
         EXPECT_TRUE(q.push(i));
@@ -103,7 +103,7 @@ TEST(SPSCQueue, FIFOOrder) {
 }
 
 TEST(SPSCQueue, EmptyAfterPop) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     EXPECT_TRUE(q.push(10));
 
@@ -115,7 +115,7 @@ TEST(SPSCQueue, EmptyAfterPop) {
 }
 
 TEST(SPSCQueue, FullQueue) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     // Capacity is effectively Capacity - 1.
     for (int i = 0; i < 7; ++i)
@@ -125,7 +125,7 @@ TEST(SPSCQueue, FullQueue) {
 }
 
 TEST(SPSCQueue, RejectsPushWhenFullWithoutOverwriting) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     for (int i = 0; i < 7; ++i)
         EXPECT_TRUE(q.push(i));
@@ -143,7 +143,7 @@ TEST(SPSCQueue, RejectsPushWhenFullWithoutOverwriting) {
 }
 
 TEST(SPSCQueue, FillEmptyFill) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     for (int round = 0; round < 10; ++round) {
 
@@ -162,7 +162,7 @@ TEST(SPSCQueue, FillEmptyFill) {
 }
 
 TEST(SPSCQueue, WrapAround) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     for (int i = 0; i < 1000; ++i) {
         EXPECT_TRUE(q.push(i));
@@ -174,7 +174,7 @@ TEST(SPSCQueue, WrapAround) {
 }
 
 TEST(SPSCQueue, Interleaved) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     int x;
 
@@ -196,7 +196,7 @@ TEST(SPSCQueue, Interleaved) {
 }
 
 TEST(SPSCQueue, ManyCycles) {
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
 
     for (int i = 0; i < 10000; ++i) {
         EXPECT_TRUE(q.push(i));
@@ -210,7 +210,7 @@ TEST(SPSCQueue, ManyCycles) {
 TEST(SPSCQueue, ConcurrentProducerConsumer) {
     constexpr int N = 1'000'000;
 
-    lock_based_spsc_queue<int, 1024> q;
+    spsc_queue<int, 1024> q;
 
     std::thread producer([&]() {
         for (int i = 0; i < N; ++i) {
@@ -239,7 +239,7 @@ TEST(SPSCQueue, ConcurrentProducerConsumer) {
 TEST(SPSCQueue, ConcurrentProducerConsumerNoLoss) {
     constexpr int N = 1'000'000;
 
-    lock_based_spsc_queue<int, 1024> q;
+    spsc_queue<int, 1024> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -278,7 +278,7 @@ TEST(SPSCQueue, ConcurrentProducerConsumerNoLoss) {
 TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
     constexpr int N = 100'000;
 
-    lock_based_spsc_queue<int, 8> q;
+    spsc_queue<int, 8> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -317,7 +317,7 @@ TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
 TEST(SPSCQueue, ConcurrentPayloadIntegrityUnderHeavyContention) {
     constexpr int N = 200'000;
 
-    lock_based_spsc_queue<Payload, 4> q;
+    spsc_queue<Payload, 4> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -366,7 +366,7 @@ TEST(SPSCQueue, ConcurrentRepeatedSingleSlotHandoffs) {
     constexpr int N = 20'000;
 
     for (int round = 0; round < Rounds; ++round) {
-        lock_based_spsc_queue<int, 2> q;
+        spsc_queue<int, 2> q;
         std::atomic<bool> valid{true};
         std::atomic<int> consumed{0};
 

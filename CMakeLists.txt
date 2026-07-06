@@ -74,6 +74,7 @@ endif()
 
 add_executable(benchmark_spsc
     benchmarks/benchmark_spsc.cpp
+        include/lockfree/spsc_queue.h
 )
 
 target_link_libraries(benchmark_spsc
