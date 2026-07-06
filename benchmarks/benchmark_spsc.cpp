@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "lockfree/lock_based_spsc_queue.h"
+#include "lockfree/spsc_variants.h"
 
 namespace {
 
@@ -133,9 +133,9 @@ std::string format_human_readable(const BenchmarkResult& result) {
            + " | validation_passed=" + (result.validation_passed ? "1" : "0");
 }
 
-template <std::size_t Capacity>
+template <typename Variant, std::size_t Capacity>
 BenchmarkResult run_same_thread_push_pop(std::uint64_t item_count) {
-    lock_based_spsc_queue<int, Capacity> queue;
+    typename Variant::template queue<int, Capacity> queue;
     bool valid = true;
     std::vector<std::uint64_t> latency_samples;
     latency_samples.reserve(static_cast<std::size_t>(item_count));
@@ -164,7 +164,12 @@ BenchmarkResult run_same_thread_push_pop(std::uint64_t item_count) {
         throw std::runtime_error("same-thread benchmark validation failed");
     }
 
-    return make_result("same_thread_push_pop", Capacity, item_count, elapsed_seconds, std::move(latency_samples), valid);
+    return make_result(std::string(Variant::name) + "/same_thread_push_pop",
+                       Capacity,
+                       item_count,
+                       elapsed_seconds,
+                       std::move(latency_samples),
+                       valid);
 }
 
 struct TimedPayload {
@@ -172,9 +177,9 @@ struct TimedPayload {
     std::uint64_t enqueue_time_ns = 0;
 };
 
-template <std::size_t Capacity>
+template <typename Variant, std::size_t Capacity>
 BenchmarkResult run_concurrent_transfer(std::uint64_t item_count) {
-    lock_based_spsc_queue<TimedPayload, Capacity> queue;
+    typename Variant::template queue<TimedPayload, Capacity> queue;
     bool valid = true;
     std::vector<std::uint64_t> latency_samples;
     latency_samples.reserve(static_cast<std::size_t>(item_count));
@@ -214,15 +219,26 @@ BenchmarkResult run_concurrent_transfer(std::uint64_t item_count) {
         throw std::runtime_error("concurrent benchmark validation failed");
     }
 
-    return make_result("concurrent_transfer", Capacity, item_count, elapsed_seconds, std::move(latency_samples), valid);
+    return make_result(std::string(Variant::name) + "/concurrent_transfer",
+                       Capacity,
+                       item_count,
+                       elapsed_seconds,
+                       std::move(latency_samples),
+                       valid);
 }
 
-template <std::size_t Capacity>
+template <typename Variant, std::size_t Capacity>
 void run_capacity_benchmarks(ResultWriter& writer, const std::vector<std::uint64_t>& item_counts) {
     for (const auto item_count : item_counts) {
-        writer.write_result(run_same_thread_push_pop<Capacity>(item_count));
-        writer.write_result(run_concurrent_transfer<Capacity>(item_count));
+        writer.write_result(run_same_thread_push_pop<Variant, Capacity>(item_count));
+        writer.write_result(run_concurrent_transfer<Variant, Capacity>(item_count));
     }
+}
+
+template <typename Variant>
+void run_variant_benchmarks(ResultWriter& writer, const std::vector<std::uint64_t>& item_counts) {
+    run_capacity_benchmarks<Variant, 1024>(writer, item_counts);
+    run_capacity_benchmarks<Variant, 65536>(writer, item_counts);
 }
 
 } // namespace
@@ -244,8 +260,9 @@ int main(int argc, char** argv) {
         writer.write_line("SPSC queue benchmark results");
         writer.write_line("result_file=" + result_file.string());
         writer.write_csv_header();
-        run_capacity_benchmarks<1024>(writer, item_counts);
-        run_capacity_benchmarks<65536>(writer, item_counts);
+        for_each_registered_spsc_variant([&]<typename Variant>() {
+            run_variant_benchmarks<Variant>(writer, item_counts);
+        });
     } catch (const std::exception& error) {
         std::cerr << "benchmark failed: " << error.what() << '\n';
         return 1;

@@ -8,7 +8,7 @@
 #include <thread>
 
 #include <gtest/gtest.h>
-#include "lockfree/spsc_queue.h"
+#include "lockfree/spsc_variants.h"
 
 namespace {
 
@@ -70,17 +70,35 @@ void run_started_pair(ProducerFunction producer_body, ConsumerFunction consumer_
     consumer.join();
 }
 
+template <typename Variant, typename T, std::size_t Capacity>
+using QueueFor = typename Variant::template queue<T, Capacity>;
+
 } // namespace
 
-TEST(SPSCQueue, EmptyQueue) {
-    spsc_queue<int, 8> q;
+template <typename Variant>
+class SPSCQueueTest : public ::testing::Test {};
+
+template <typename VariantList>
+struct ToGTestTypes;
+
+template <typename... Variants>
+struct ToGTestTypes<spsc_variant_list<Variants...>> {
+    using type = ::testing::Types<Variants...>;
+};
+
+using SPSCQueueVariants = typename ToGTestTypes<registered_spsc_variants>::type;
+
+TYPED_TEST_SUITE(SPSCQueueTest, SPSCQueueVariants);
+
+TYPED_TEST(SPSCQueueTest, EmptyQueue) {
+    QueueFor<TypeParam, int, 8> q;
 
     int x;
     EXPECT_FALSE(q.pop(x));
 }
 
-TEST(SPSCQueue, PushPop) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, PushPop) {
+    QueueFor<TypeParam, int, 8> q;
 
     EXPECT_TRUE(q.push(42));
 
@@ -89,8 +107,8 @@ TEST(SPSCQueue, PushPop) {
     EXPECT_EQ(x, 42);
 }
 
-TEST(SPSCQueue, FIFOOrder) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, FIFOOrder) {
+    QueueFor<TypeParam, int, 8> q;
 
     for (int i = 0; i < 5; ++i)
         EXPECT_TRUE(q.push(i));
@@ -102,8 +120,8 @@ TEST(SPSCQueue, FIFOOrder) {
     }
 }
 
-TEST(SPSCQueue, EmptyAfterPop) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, EmptyAfterPop) {
+    QueueFor<TypeParam, int, 8> q;
 
     EXPECT_TRUE(q.push(10));
 
@@ -114,8 +132,8 @@ TEST(SPSCQueue, EmptyAfterPop) {
     EXPECT_FALSE(q.pop(x));
 }
 
-TEST(SPSCQueue, FullQueue) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, FullQueue) {
+    QueueFor<TypeParam, int, 8> q;
 
     // Capacity is effectively Capacity - 1.
     for (int i = 0; i < 7; ++i)
@@ -124,8 +142,8 @@ TEST(SPSCQueue, FullQueue) {
     EXPECT_FALSE(q.push(100));
 }
 
-TEST(SPSCQueue, RejectsPushWhenFullWithoutOverwriting) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, RejectsPushWhenFullWithoutOverwriting) {
+    QueueFor<TypeParam, int, 8> q;
 
     for (int i = 0; i < 7; ++i)
         EXPECT_TRUE(q.push(i));
@@ -142,8 +160,8 @@ TEST(SPSCQueue, RejectsPushWhenFullWithoutOverwriting) {
     EXPECT_FALSE(q.pop(x));
 }
 
-TEST(SPSCQueue, FillEmptyFill) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, FillEmptyFill) {
+    QueueFor<TypeParam, int, 8> q;
 
     for (int round = 0; round < 10; ++round) {
 
@@ -161,8 +179,8 @@ TEST(SPSCQueue, FillEmptyFill) {
     }
 }
 
-TEST(SPSCQueue, WrapAround) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, WrapAround) {
+    QueueFor<TypeParam, int, 8> q;
 
     for (int i = 0; i < 1000; ++i) {
         EXPECT_TRUE(q.push(i));
@@ -173,8 +191,8 @@ TEST(SPSCQueue, WrapAround) {
     }
 }
 
-TEST(SPSCQueue, Interleaved) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, Interleaved) {
+    QueueFor<TypeParam, int, 8> q;
 
     int x;
 
@@ -195,8 +213,8 @@ TEST(SPSCQueue, Interleaved) {
     EXPECT_FALSE(q.pop(x));
 }
 
-TEST(SPSCQueue, ManyCycles) {
-    spsc_queue<int, 8> q;
+TYPED_TEST(SPSCQueueTest, ManyCycles) {
+    QueueFor<TypeParam, int, 8> q;
 
     for (int i = 0; i < 10000; ++i) {
         EXPECT_TRUE(q.push(i));
@@ -207,10 +225,10 @@ TEST(SPSCQueue, ManyCycles) {
     }
 }
 
-TEST(SPSCQueue, ConcurrentProducerConsumer) {
+TYPED_TEST(SPSCQueueTest, ConcurrentProducerConsumer) {
     constexpr int N = 1'000'000;
 
-    spsc_queue<int, 1024> q;
+    QueueFor<TypeParam, int, 1024> q;
 
     std::thread producer([&]() {
         for (int i = 0; i < N; ++i) {
@@ -236,10 +254,10 @@ TEST(SPSCQueue, ConcurrentProducerConsumer) {
     consumer.join();
 }
 
-TEST(SPSCQueue, ConcurrentProducerConsumerNoLoss) {
+TYPED_TEST(SPSCQueueTest, ConcurrentProducerConsumerNoLoss) {
     constexpr int N = 1'000'000;
 
-    spsc_queue<int, 1024> q;
+    QueueFor<TypeParam, int, 1024> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -275,10 +293,10 @@ TEST(SPSCQueue, ConcurrentProducerConsumerNoLoss) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
+TYPED_TEST(SPSCQueueTest, NoLossUnderSmallCapacityContention) {
     constexpr int N = 100'000;
 
-    spsc_queue<int, 8> q;
+    QueueFor<TypeParam, int, 8> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -314,10 +332,10 @@ TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SPSCQueue, ConcurrentPayloadIntegrityUnderHeavyContention) {
+TYPED_TEST(SPSCQueueTest, ConcurrentPayloadIntegrityUnderHeavyContention) {
     constexpr int N = 200'000;
 
-    spsc_queue<Payload, 4> q;
+    QueueFor<TypeParam, Payload, 4> q;
     std::atomic<bool> valid{true};
     std::atomic<int> consumed{0};
 
@@ -361,12 +379,12 @@ TEST(SPSCQueue, ConcurrentPayloadIntegrityUnderHeavyContention) {
     EXPECT_TRUE(q.empty());
 }
 
-TEST(SPSCQueue, ConcurrentRepeatedSingleSlotHandoffs) {
+TYPED_TEST(SPSCQueueTest, ConcurrentRepeatedSingleSlotHandoffs) {
     constexpr int Rounds = 25;
     constexpr int N = 20'000;
 
     for (int round = 0; round < Rounds; ++round) {
-        spsc_queue<int, 2> q;
+        QueueFor<TypeParam, int, 2> q;
         std::atomic<bool> valid{true};
         std::atomic<int> consumed{0};
 

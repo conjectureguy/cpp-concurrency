@@ -2,8 +2,8 @@
 // Created by rahul on 7/3/26.
 //
 
-#ifndef LOCKFREE_SPSC_QUEUE_H
-#define LOCKFREE_SPSC_QUEUE_H
+#ifndef LOCKFREE_LOCK_BASED_SPSC_QUEUE_H
+#define LOCKFREE_LOCK_BASED_SPSC_QUEUE_H
 #include <array>
 #include <atomic>
 #include <mutex>
@@ -64,4 +64,4 @@ bool lock_based_spsc_queue<T, Capacity>::full() const {
     return (tail_ + 1) % Capacity == head_;
 }
 
-#endif //LOCKFREE_SPSC_QUEUE_H
+#endif //LOCKFREE_LOCK_BASED_SPSC_QUEUE_H
