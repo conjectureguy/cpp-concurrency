@@ -2,11 +2,75 @@
 // Created by rahul on 7/3/26.
 //
 
+#include <array>
 #include <atomic>
+#include <cstdint>
 #include <thread>
 
 #include <gtest/gtest.h>
 #include "lockfree/spsc_queue.h"
+
+namespace {
+
+struct Payload {
+    std::uint64_t sequence;
+    std::uint64_t inverse;
+    std::array<std::uint64_t, 4> lanes;
+};
+
+Payload make_payload(std::uint64_t sequence) {
+    return Payload{
+        sequence,
+        ~sequence,
+        {
+            sequence ^ 0x9e3779b97f4a7c15ULL,
+            sequence * 3 + 1,
+            sequence * 5 + 7,
+            sequence * 11 + 13,
+        },
+    };
+}
+
+bool payload_is_valid(const Payload& payload) {
+    return payload.inverse == ~payload.sequence
+           && payload.lanes[0] == (payload.sequence ^ 0x9e3779b97f4a7c15ULL)
+           && payload.lanes[1] == payload.sequence * 3 + 1
+           && payload.lanes[2] == payload.sequence * 5 + 7
+           && payload.lanes[3] == payload.sequence * 11 + 13;
+}
+
+void wait_for_start(std::atomic<int>& ready, std::atomic<bool>& start) {
+    ready.fetch_add(1, std::memory_order_release);
+    while (!start.load(std::memory_order_acquire)) {
+        std::this_thread::yield();
+    }
+}
+
+template <typename ProducerFunction, typename ConsumerFunction>
+void run_started_pair(ProducerFunction producer_body, ConsumerFunction consumer_body) {
+    std::atomic<int> ready{0};
+    std::atomic<bool> start{false};
+
+    std::thread producer([&]() {
+        wait_for_start(ready, start);
+        producer_body();
+    });
+
+    std::thread consumer([&]() {
+        wait_for_start(ready, start);
+        consumer_body();
+    });
+
+    while (ready.load(std::memory_order_acquire) != 2) {
+        std::this_thread::yield();
+    }
+    start.store(true, std::memory_order_release);
+
+    producer.join();
+    consumer.join();
+}
+
+} // namespace
 
 TEST(SPSCQueue, EmptyQueue) {
     spsc_queue<int, 8> q;
@@ -248,4 +312,100 @@ TEST(SPSCQueue, NoLossUnderSmallCapacityContention) {
     EXPECT_TRUE(valid.load());
     EXPECT_EQ(consumed.load(), N);
     EXPECT_TRUE(q.empty());
+}
+
+TEST(SPSCQueue, ConcurrentPayloadIntegrityUnderHeavyContention) {
+    constexpr int N = 200'000;
+
+    spsc_queue<Payload, 4> q;
+    std::atomic<bool> valid{true};
+    std::atomic<int> consumed{0};
+
+    run_started_pair(
+        [&]() {
+            for (int i = 0; i < N; ++i) {
+                const Payload payload = make_payload(static_cast<std::uint64_t>(i));
+
+                while (!q.push(payload)) {
+                    std::this_thread::yield();
+                }
+
+                if ((i % 7) == 0) {
+                    std::this_thread::yield();
+                }
+            }
+        },
+        [&]() {
+            for (int i = 0; i < N; ++i) {
+                Payload payload{};
+
+                while (!q.pop(payload)) {
+                    std::this_thread::yield();
+                }
+
+                const auto expected = static_cast<std::uint64_t>(i);
+                if (payload.sequence != expected || !payload_is_valid(payload)) {
+                    valid.store(false, std::memory_order_relaxed);
+                }
+
+                consumed.fetch_add(1, std::memory_order_relaxed);
+
+                if ((i % 5) == 0) {
+                    std::this_thread::yield();
+                }
+            }
+        });
+
+    EXPECT_TRUE(valid.load());
+    EXPECT_EQ(consumed.load(), N);
+    EXPECT_TRUE(q.empty());
+}
+
+TEST(SPSCQueue, ConcurrentRepeatedSingleSlotHandoffs) {
+    constexpr int Rounds = 25;
+    constexpr int N = 20'000;
+
+    for (int round = 0; round < Rounds; ++round) {
+        spsc_queue<int, 2> q;
+        std::atomic<bool> valid{true};
+        std::atomic<int> consumed{0};
+
+        run_started_pair(
+            [&]() {
+                for (int i = 0; i < N; ++i) {
+                    const int value = round * N + i;
+
+                    while (!q.push(value)) {
+                        std::this_thread::yield();
+                    }
+
+                    if (((i + round) % 3) == 0) {
+                        std::this_thread::yield();
+                    }
+                }
+            },
+            [&]() {
+                for (int i = 0; i < N; ++i) {
+                    int value = 0;
+
+                    while (!q.pop(value)) {
+                        std::this_thread::yield();
+                    }
+
+                    if (value != round * N + i) {
+                        valid.store(false, std::memory_order_relaxed);
+                    }
+
+                    consumed.fetch_add(1, std::memory_order_relaxed);
+
+                    if (((i + round) % 4) == 0) {
+                        std::this_thread::yield();
+                    }
+                }
+            });
+
+        EXPECT_TRUE(valid.load()) << "round=" << round;
+        EXPECT_EQ(consumed.load(), N) << "round=" << round;
+        EXPECT_TRUE(q.empty()) << "round=" << round;
+    }
 }
