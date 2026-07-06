@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include "lockfree/spsc_queue.h"
+#include "lockfree/lock_based_spsc_queue.h"
 
 namespace {
 
@@ -135,7 +135,7 @@ std::string format_human_readable(const BenchmarkResult& result) {
 
 template <std::size_t Capacity>
 BenchmarkResult run_same_thread_push_pop(std::uint64_t item_count) {
-    spsc_queue<int, Capacity> queue;
+    lock_based_spsc_queue<int, Capacity> queue;
     bool valid = true;
     std::vector<std::uint64_t> latency_samples;
     latency_samples.reserve(static_cast<std::size_t>(item_count));
@@ -174,7 +174,7 @@ struct TimedPayload {
 
 template <std::size_t Capacity>
 BenchmarkResult run_concurrent_transfer(std::uint64_t item_count) {
-    spsc_queue<TimedPayload, Capacity> queue;
+    lock_based_spsc_queue<TimedPayload, Capacity> queue;
     bool valid = true;
     std::vector<std::uint64_t> latency_samples;
     latency_samples.reserve(static_cast<std::size_t>(item_count));

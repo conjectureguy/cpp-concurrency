@@ -11,7 +11,7 @@
 // Lock based
 
 template <typename T, std::size_t Capacity>
-class spsc_queue {
+class lock_based_spsc_queue {
 public:
     bool push(const T& item);
     bool pop(T& out);
@@ -26,7 +26,7 @@ private:
 };
 
 template<typename T, std::size_t Capacity>
-bool spsc_queue<T, Capacity>::push(const T& item) {
+bool lock_based_spsc_queue<T, Capacity>::push(const T& item) {
     // check if tail == head else push
     // only producer will write to tail
     std::lock_guard<std::mutex> lock(mutex_);
@@ -41,7 +41,7 @@ bool spsc_queue<T, Capacity>::push(const T& item) {
 }
 
 template<typename T, std::size_t Capacity>
-bool spsc_queue<T, Capacity>::pop(T& item) {
+bool lock_based_spsc_queue<T, Capacity>::pop(T& item) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (head_ == tail_) return false;
 
@@ -53,13 +53,13 @@ bool spsc_queue<T, Capacity>::pop(T& item) {
 }
 
 template<typename T, std::size_t Capacity>
-bool spsc_queue<T, Capacity>::empty() const {
+bool lock_based_spsc_queue<T, Capacity>::empty() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return head_ == tail_;
 }
 
 template<typename T, std::size_t Capacity>
-bool spsc_queue<T, Capacity>::full() const {
+bool lock_based_spsc_queue<T, Capacity>::full() const {
     std::lock_guard<std::mutex> lock(mutex_);
     return (tail_ + 1) % Capacity == head_;
 }
