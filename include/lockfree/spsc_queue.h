@@ -9,7 +9,7 @@
 
 template <typename T, std::size_t Capacity>
 class spsc_queue {
-    static_assert(Capacity > 0, "Capacity must be greater than 0");
+    static_assert(Capacity > 1, "Capacity must be greater than 1");
     static_assert(std::atomic<int>::is_always_lock_free);
 
 public:
