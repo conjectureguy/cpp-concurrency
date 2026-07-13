@@ -79,6 +79,7 @@ add_executable(benchmark_spsc
     include/lockfree/spsc_queue.h
     include/lockfree/spsc_variants.h
     include/lockfree/optimize_memory_ordering_spsc_queue.h
+        include/lockfree/remove_false_sharing.h
 )
 
 target_link_libraries(benchmark_spsc
