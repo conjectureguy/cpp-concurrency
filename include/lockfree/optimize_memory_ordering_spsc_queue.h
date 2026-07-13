@@ -27,9 +27,14 @@ template<typename T, std::size_t Capacity>
 bool optimize_memory_ordering_spsc_queue<T, Capacity>::push(const T& item) {
     // check if tail == head else push
     // only producer will write to tail
-    if (full()) return false;
 
-    auto tail = tail_.load(std::memory_order_acquire);
+    // push() owns tail only. So, relaxed is fine but we need acquire for head.
+    auto head = head_.load(std::memory_order_acquire);
+    auto tail = tail_.load(std::memory_order_relaxed);
+    if (head == (tail + 1) % Capacity) {
+        return false;
+    }
+
     auto next = (tail + 1) % Capacity;
     queue_[tail] = item;
     tail_.store(next, std::memory_order_release);
@@ -39,9 +44,12 @@ bool optimize_memory_ordering_spsc_queue<T, Capacity>::push(const T& item) {
 
 template<typename T, std::size_t Capacity>
 bool optimize_memory_ordering_spsc_queue<T, Capacity>::pop(T& item) {
-    if (empty()) return false;
+    auto head = head_.load(std::memory_order_relaxed);
+    auto tail = tail_.load(std::memory_order_acquire);
+    if (head == tail) {
+        return false;
+    }
 
-    auto head = head_.load(std::memory_order_acquire);
     auto next = (head + 1) % Capacity;
     item = queue_[head];
     head_.store(next, std::memory_order_release);
