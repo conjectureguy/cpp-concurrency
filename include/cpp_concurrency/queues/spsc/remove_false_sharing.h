@@ -1,15 +1,16 @@
 //
-// Created by rahul on 7/10/26.
+// Created by rahul on 7/13/26.
 //
 
-#ifndef LOCKFREE_OPTIMIZE_MEMORY_ORDERING_SPSC_QUEUE_H
-#define LOCKFREE_OPTIMIZE_MEMORY_ORDERING_SPSC_QUEUE_H
+#ifndef CPP_CONCURRENCY_REMOVE_FALSE_SHARING_H
+#define CPP_CONCURRENCY_REMOVE_FALSE_SHARING_H
+
 #include <array>
 #include <atomic>
 #include <cstddef>
 
 template <typename T, std::size_t Capacity>
-class optimize_memory_ordering_spsc_queue {
+class alignas(64) remove_false_sharing_spsc_queue {
     static_assert(Capacity > 1, "Capacity must be greater than 1");
     static_assert(std::atomic<int>::is_always_lock_free);
 
@@ -21,12 +22,12 @@ public:
 
 private:
     std::array<T, Capacity> queue_;
-    std::atomic<int> head_{0};
-    std::atomic<int> tail_{0};
+    alignas(64) std::atomic<int> head_{0};
+    alignas(64) std::atomic<int> tail_{0};
 };
 
 template<typename T, std::size_t Capacity>
-bool optimize_memory_ordering_spsc_queue<T, Capacity>::push(const T& item) {
+bool remove_false_sharing_spsc_queue<T, Capacity>::push(const T& item) {
     // check if tail == head else push
     // only producer will write to tail
 
@@ -45,7 +46,7 @@ bool optimize_memory_ordering_spsc_queue<T, Capacity>::push(const T& item) {
 }
 
 template<typename T, std::size_t Capacity>
-bool optimize_memory_ordering_spsc_queue<T, Capacity>::pop(T& item) {
+bool remove_false_sharing_spsc_queue<T, Capacity>::pop(T& item) {
     auto head = head_.load(std::memory_order_relaxed);
     auto tail = tail_.load(std::memory_order_acquire);
     if (head == tail) {
@@ -59,14 +60,13 @@ bool optimize_memory_ordering_spsc_queue<T, Capacity>::pop(T& item) {
 }
 
 template<typename T, std::size_t Capacity>
-bool optimize_memory_ordering_spsc_queue<T, Capacity>::empty() const {
+bool remove_false_sharing_spsc_queue<T, Capacity>::empty() const {
     return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire);
 }
 
 template<typename T, std::size_t Capacity>
-bool optimize_memory_ordering_spsc_queue<T, Capacity>::full() const {
+bool remove_false_sharing_spsc_queue<T, Capacity>::full() const {
     return (tail_.load(std::memory_order_acquire) + 1) % Capacity == head_.load(std::memory_order_acquire);
 }
 
-
-#endif //LOCKFREE_OPTIMIZE_MEMORY_ORDERING_SPSC_QUEUE_H
+#endif //CPP_CONCURRENCY_REMOVE_FALSE_SHARING_H

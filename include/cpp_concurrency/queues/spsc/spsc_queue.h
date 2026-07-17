@@ -2,8 +2,8 @@
 // Created by rahul on 7/3/26.
 //
 
-#ifndef LOCKFREE_SPSC_QUEUE_H
-#define LOCKFREE_SPSC_QUEUE_H
+#ifndef CPP_CONCURRENCY_SPSC_QUEUE_H
+#define CPP_CONCURRENCY_SPSC_QUEUE_H
 #include <array>
 #include <atomic>
 #include <cstddef>
@@ -60,4 +60,4 @@ bool spsc_queue<T, Capacity>::full() const {
     return (tail_.load() + 1) % Capacity == head_.load();
 }
 
-#endif //LOCKFREE_SPSC_QUEUE_H
+#endif //CPP_CONCURRENCY_SPSC_QUEUE_H

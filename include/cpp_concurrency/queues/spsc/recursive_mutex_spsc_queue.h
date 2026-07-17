@@ -2,8 +2,8 @@
 // Created by rahul on 7/6/26.
 //
 
-#ifndef LOCKFREE_RECURSIVE_MUTEX_SPSC_QUEUE_H
-#define LOCKFREE_RECURSIVE_MUTEX_SPSC_QUEUE_H
+#ifndef CPP_CONCURRENCY_RECURSIVE_MUTEX_SPSC_QUEUE_H
+#define CPP_CONCURRENCY_RECURSIVE_MUTEX_SPSC_QUEUE_H
 
 #include <array>
 #include <cstddef>
@@ -61,4 +61,4 @@ bool recursive_mutex_spsc_queue<T, Capacity>::full() const {
     return (tail_ + 1) % Capacity == head_;
 }
 
-#endif //LOCKFREE_RECURSIVE_MUTEX_SPSC_QUEUE_H
+#endif //CPP_CONCURRENCY_RECURSIVE_MUTEX_SPSC_QUEUE_H

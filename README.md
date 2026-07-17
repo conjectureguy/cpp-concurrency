@@ -1,4 +1,4 @@
-# Lock-Free DS
+# C++ Concurrency
 
 Small C++ benchmark project currently comparing SPSC queue implementations:
 
@@ -10,9 +10,9 @@ Small C++ benchmark project currently comparing SPSC queue implementations:
 
 ## Layout
 
-- `include/lockfree/queues/spsc/`: SPSC queue implementations.
-- `include/lockfree/hashmaps/`: hashmap implementations.
-- `include/lockfree/spsc_variants.h`: registry used by SPSC tests and benchmarks.
+- `include/cpp_concurrency/queues/spsc/`: SPSC queue implementations.
+- `include/cpp_concurrency/hashmaps/`: hashmap implementations.
+- `include/cpp_concurrency/spsc_variants.h`: registry used by SPSC tests and benchmarks.
 - `tests/`: GoogleTest coverage for data structures.
 - `benchmarks/`: standalone benchmark executables.
 

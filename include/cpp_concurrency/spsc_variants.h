@@ -1,14 +1,14 @@
-#ifndef LOCKFREE_SPSC_VARIANTS_H
-#define LOCKFREE_SPSC_VARIANTS_H
+#ifndef CPP_CONCURRENCY_SPSC_VARIANTS_H
+#define CPP_CONCURRENCY_SPSC_VARIANTS_H
 
 #include <cstddef>
 #include <utility>
 
-#include "lockfree/queues/spsc/lock_based_spsc_queue.h"
-#include "lockfree/queues/spsc/recursive_mutex_spsc_queue.h"
-#include "lockfree/queues/spsc/spsc_queue.h"
-#include "lockfree/queues/spsc/optimize_memory_ordering_spsc_queue.h"
-#include "lockfree/queues/spsc/remove_false_sharing.h"
+#include "cpp_concurrency/queues/spsc/lock_based_spsc_queue.h"
+#include "cpp_concurrency/queues/spsc/recursive_mutex_spsc_queue.h"
+#include "cpp_concurrency/queues/spsc/spsc_queue.h"
+#include "cpp_concurrency/queues/spsc/optimize_memory_ordering_spsc_queue.h"
+#include "cpp_concurrency/queues/spsc/remove_false_sharing.h"
 
 struct lock_free_spsc_variant {
     static constexpr const char* name = "lock_free_spsc";
@@ -67,4 +67,4 @@ void for_each_registered_spsc_variant(Function&& function) {
     for_each_spsc_variant(registered_spsc_variants{}, std::forward<Function>(function));
 }
 
-#endif // LOCKFREE_SPSC_VARIANTS_H
+#endif // CPP_CONCURRENCY_SPSC_VARIANTS_H

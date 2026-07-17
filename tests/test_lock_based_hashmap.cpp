@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "lockfree/hashmaps/lock_based_hashmap.h"
+#include "cpp_concurrency/hashmaps/lock_based_hashmap.h"
 
 namespace {
 

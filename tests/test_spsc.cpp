@@ -8,7 +8,7 @@
 #include <thread>
 
 #include <gtest/gtest.h>
-#include "lockfree/spsc_variants.h"
+#include "cpp_concurrency/spsc_variants.h"
 
 namespace {
 

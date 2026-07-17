@@ -2,8 +2,8 @@
 // Created by rahul on 7/17/26.
 //
 
-#ifndef LOCKFREE_LOCK_BASED_HASHMAP_H
-#define LOCKFREE_LOCK_BASED_HASHMAP_H
+#ifndef CPP_CONCURRENCY_LOCK_BASED_HASHMAP_H
+#define CPP_CONCURRENCY_LOCK_BASED_HASHMAP_H
 #include <functional>
 #include <list>
 #include <memory>
@@ -106,4 +106,4 @@ public:
     }
 };
 
-#endif //LOCKFREE_LOCK_BASED_HASHMAP_H
+#endif //CPP_CONCURRENCY_LOCK_BASED_HASHMAP_H

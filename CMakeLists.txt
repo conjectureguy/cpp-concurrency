@@ -1,20 +1,20 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(lockfree LANGUAGES CXX)
+project(cpp_concurrency LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(LOCKFREE_ENABLE_TSAN "Build tests with ThreadSanitizer enabled" OFF)
+option(CPP_CONCURRENCY_ENABLE_TSAN "Build tests with ThreadSanitizer enabled" OFF)
 
 # ----------------------------------------
 # Header-only library
 # ----------------------------------------
 
-add_library(lockfree INTERFACE)
+add_library(cpp_concurrency INTERFACE)
 
-target_include_directories(lockfree
+target_include_directories(cpp_concurrency
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
@@ -47,7 +47,7 @@ add_executable(test_spsc
 
 target_link_libraries(test_spsc
     PRIVATE
-        lockfree
+        cpp_concurrency
         GTest::gtest_main
 )
 
@@ -57,11 +57,11 @@ add_executable(test_lock_based_hashmap
 
 target_link_libraries(test_lock_based_hashmap
     PRIVATE
-        lockfree
+        cpp_concurrency
         GTest::gtest_main
 )
 
-if(LOCKFREE_ENABLE_TSAN)
+if(CPP_CONCURRENCY_ENABLE_TSAN)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         foreach(test_target IN ITEMS test_spsc test_lock_based_hashmap)
             target_compile_options(${test_target}
@@ -76,7 +76,7 @@ if(LOCKFREE_ENABLE_TSAN)
             )
         endforeach()
     else()
-        message(WARNING "LOCKFREE_ENABLE_TSAN is only configured for Clang and GCC")
+        message(WARNING "CPP_CONCURRENCY_ENABLE_TSAN is only configured for Clang and GCC")
     endif()
 endif()
 
@@ -86,17 +86,17 @@ endif()
 
 add_executable(benchmark_spsc
     benchmarks/benchmark_spsc.cpp
-    include/lockfree/queues/spsc/lock_based_spsc_queue.h
-    include/lockfree/queues/spsc/recursive_mutex_spsc_queue.h
-    include/lockfree/queues/spsc/spsc_queue.h
-    include/lockfree/spsc_variants.h
-    include/lockfree/queues/spsc/optimize_memory_ordering_spsc_queue.h
-    include/lockfree/queues/spsc/remove_false_sharing.h
+    include/cpp_concurrency/queues/spsc/lock_based_spsc_queue.h
+    include/cpp_concurrency/queues/spsc/recursive_mutex_spsc_queue.h
+    include/cpp_concurrency/queues/spsc/spsc_queue.h
+    include/cpp_concurrency/spsc_variants.h
+    include/cpp_concurrency/queues/spsc/optimize_memory_ordering_spsc_queue.h
+    include/cpp_concurrency/queues/spsc/remove_false_sharing.h
 )
 
 target_link_libraries(benchmark_spsc
     PRIVATE
-        lockfree
+        cpp_concurrency
 )
 
 # ----------------------------------------
