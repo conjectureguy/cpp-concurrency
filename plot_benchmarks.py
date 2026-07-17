@@ -196,6 +196,99 @@ def save_implementation_comparison(df, plt, out_dir: Path, metric: str) -> list[
     return output_paths
 
 
+def save_latency_percentile_comparison(df, plt, out_dir: Path) -> list[Path]:
+    percentile_metrics = ["p50_ns", "p95_ns", "p99_ns"]
+    available_metrics = [
+        metric for metric in percentile_metrics
+        if metric in df.columns and not df[metric].dropna().empty
+    ]
+    if not available_metrics:
+        return []
+
+    output_paths: list[Path] = []
+    columns = comparison_group_columns(df)
+    colors = ["#4c78a8", "#f58518", "#54a24b", "#e45756", "#72b7b2", "#b279a2"]
+
+    for group_key, group in df.groupby(columns, sort=True):
+        label_columns = ["implementation"]
+        if "items" in group.columns:
+            label_columns.append("items")
+
+        melted = group.melt(
+            id_vars=label_columns,
+            value_vars=available_metrics,
+            var_name="percentile",
+            value_name="latency_ns",
+        ).dropna(subset=["latency_ns"])
+        if melted.empty:
+            continue
+
+        if "items" in melted.columns:
+            melted["series"] = (
+                melted["items"].map(format_int_label)
+                + " "
+                + melted["percentile"].str.replace("_ns", "", regex=False).str.upper()
+            )
+        else:
+            melted["series"] = melted["percentile"].str.replace("_ns", "", regex=False).str.upper()
+
+        plot_df = melted.pivot_table(
+            index="implementation",
+            columns="series",
+            values="latency_ns",
+            aggfunc="mean",
+            sort=False,
+        ).dropna(how="all")
+        if plot_df.empty:
+            continue
+
+        sort_column = plot_df.columns[-1]
+        plot_df = plot_df.sort_values(by=sort_column, ascending=False)
+
+        parts = group_title_parts(group_key, columns)
+        workload = parts.get("workload", "benchmark")
+        capacity = parts.get("capacity")
+
+        fig_width = max(9.5, len(plot_df.index) * len(plot_df.columns) * 0.42)
+        _, ax = plt.subplots(figsize=(fig_width, 5.8))
+        plot_df.plot(kind="bar", ax=ax, color=colors[: len(plot_df.columns)], width=0.78)
+
+        title = f"Latency percentiles (ns): {workload}"
+        subtitle_parts = []
+        if capacity is not None:
+            subtitle_parts.append(f"capacity={capacity}")
+        if subtitle_parts:
+            title += f" ({', '.join(subtitle_parts)})"
+
+        ax.set_title(title)
+        ax.set_xlabel("Implementation")
+        ax.set_ylabel("Latency (ns)")
+        ax.grid(axis="y", alpha=0.3)
+        ax.set_axisbelow(True)
+        ax.legend(title="Item count / percentile")
+        plt.xticks(rotation=20, ha="right")
+
+        max_value = plot_df.max().max()
+        for container in ax.containers:
+            ax.bar_label(container, fmt="%.3g", fontsize=8, padding=2)
+        if max_value > 0:
+            ax.set_ylim(top=max_value * 1.18)
+
+        plt.tight_layout()
+
+        filename_parts = [slugify(str(workload))]
+        if capacity is not None:
+            filename_parts.append(f"capacity_{slugify(capacity)}")
+        filename_parts.append("latency_percentiles_ns")
+
+        output_path = out_dir / ("__".join(filename_parts) + ".png")
+        plt.savefig(output_path, dpi=160)
+        plt.close()
+        output_paths.append(output_path)
+
+    return output_paths
+
+
 def generate_plots(csv_path: Path, output_root: Path) -> list[Path]:
     pd, plt = require_plotting_modules()
     df = prepare_dataframe(pd, csv_path)
@@ -210,13 +303,11 @@ def generate_plots(csv_path: Path, output_root: Path) -> list[Path]:
         "seconds",
         "mitems_per_second",
         "ns_per_item",
-        "p50_ns",
-        "p95_ns",
-        "p99_ns",
     ]
 
     for metric in metrics:
         generated.extend(save_implementation_comparison(df, plt, out_dir, metric))
+    generated.extend(save_latency_percentile_comparison(df, plt, out_dir))
 
     if not generated:
         raise SystemExit("No plottable metric columns were found.")

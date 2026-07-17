@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "cpp_concurrency/hashmaps/lock_based_hashmap.h"
+#include "cpp_concurrency/hashmap_variants.h"
 
 namespace {
 
@@ -32,14 +32,29 @@ struct CountingHash {
 
 } // namespace
 
-TEST(LockBasedHashmapTest, MissingKeyReturnsDefaultValue) {
-    lock_based_hashmap<int, std::string> map(8);
+template <typename VariantList>
+struct ToGTestTypes;
+
+template <typename... Variants>
+struct ToGTestTypes<hashmap_variant_list<Variants...>> {
+    using type = testing::Types<Variants...>;
+};
+
+template <typename Variant>
+class LockBasedHashmapTest : public testing::Test {};
+
+using LockBasedHashmapVariants = typename ToGTestTypes<registered_hashmap_variants>::type;
+
+TYPED_TEST_SUITE(LockBasedHashmapTest, LockBasedHashmapVariants);
+
+TYPED_TEST(LockBasedHashmapTest, MissingKeyReturnsDefaultValue) {
+    typename TypeParam::template hashmap<int, std::string, std::hash<int>> map(8);
 
     EXPECT_EQ(map.get_value(42, "missing"), "missing");
 }
 
-TEST(LockBasedHashmapTest, AddsAndFindsValue) {
-    lock_based_hashmap<int, std::string> map(8);
+TYPED_TEST(LockBasedHashmapTest, AddsAndFindsValue) {
+    typename TypeParam::template hashmap<int, std::string, std::hash<int>> map(8);
 
     map.add_or_update_value(1, "one");
     map.add_or_update_value(2, "two");
@@ -48,8 +63,8 @@ TEST(LockBasedHashmapTest, AddsAndFindsValue) {
     EXPECT_EQ(map.get_value(2, "missing"), "two");
 }
 
-TEST(LockBasedHashmapTest, UpdatesExistingValueWithoutChangingOtherKeys) {
-    lock_based_hashmap<int, std::string> map(8);
+TYPED_TEST(LockBasedHashmapTest, UpdatesExistingValueWithoutChangingOtherKeys) {
+    typename TypeParam::template hashmap<int, std::string, std::hash<int>> map(8);
 
     map.add_or_update_value(1, "one");
     map.add_or_update_value(2, "two");
@@ -59,8 +74,8 @@ TEST(LockBasedHashmapTest, UpdatesExistingValueWithoutChangingOtherKeys) {
     EXPECT_EQ(map.get_value(2, "missing"), "two");
 }
 
-TEST(LockBasedHashmapTest, RemovesExistingValue) {
-    lock_based_hashmap<int, std::string> map(8);
+TYPED_TEST(LockBasedHashmapTest, RemovesExistingValue) {
+    typename TypeParam::template hashmap<int, std::string, std::hash<int>> map(8);
 
     map.add_or_update_value(7, "seven");
     map.remove_key(7);
@@ -68,8 +83,8 @@ TEST(LockBasedHashmapTest, RemovesExistingValue) {
     EXPECT_EQ(map.get_value(7, "missing"), "missing");
 }
 
-TEST(LockBasedHashmapTest, RemovingMissingValueIsNoOp) {
-    lock_based_hashmap<int, std::string> map(8);
+TYPED_TEST(LockBasedHashmapTest, RemovingMissingValueIsNoOp) {
+    typename TypeParam::template hashmap<int, std::string, std::hash<int>> map(8);
 
     map.add_or_update_value(1, "one");
     map.remove_key(2);
@@ -77,8 +92,8 @@ TEST(LockBasedHashmapTest, RemovingMissingValueIsNoOp) {
     EXPECT_EQ(map.get_value(1, "missing"), "one");
 }
 
-TEST(LockBasedHashmapTest, HandlesHashCollisions) {
-    lock_based_hashmap<int, std::string, ConstantHash> map(4);
+TYPED_TEST(LockBasedHashmapTest, HandlesHashCollisions) {
+    typename TypeParam::template hashmap<int, std::string, ConstantHash> map(4);
 
     map.add_or_update_value(1, "one");
     map.add_or_update_value(2, "two");
@@ -89,9 +104,9 @@ TEST(LockBasedHashmapTest, HandlesHashCollisions) {
     EXPECT_EQ(map.get_value(3, "missing"), "three");
 }
 
-TEST(LockBasedHashmapTest, UsesProvidedHashFunction) {
+TYPED_TEST(LockBasedHashmapTest, UsesProvidedHashFunction) {
     std::atomic<int> calls{0};
-    lock_based_hashmap<int, std::string, CountingHash> map(8, CountingHash{&calls});
+    typename TypeParam::template hashmap<int, std::string, CountingHash> map(8, CountingHash{&calls});
 
     map.add_or_update_value(1, "one");
     EXPECT_EQ(map.get_value(1, "missing"), "one");
@@ -99,14 +114,16 @@ TEST(LockBasedHashmapTest, UsesProvidedHashFunction) {
     EXPECT_GE(calls.load(std::memory_order_relaxed), 2);
 }
 
-TEST(LockBasedHashmapTest, RejectsZeroBuckets) {
-    EXPECT_THROW((lock_based_hashmap<int, int>(0)), std::invalid_argument);
+TYPED_TEST(LockBasedHashmapTest, RejectsZeroBuckets) {
+    using Map = typename TypeParam::template hashmap<int, int, std::hash<int>>;
+
+    EXPECT_THROW((Map(0)), std::invalid_argument);
 }
 
-TEST(LockBasedHashmapTest, SupportsConcurrentWritesToDistinctKeys) {
+TYPED_TEST(LockBasedHashmapTest, SupportsConcurrentWritesToDistinctKeys) {
     constexpr int thread_count = 8;
     constexpr int keys_per_thread = 1000;
-    lock_based_hashmap<int, int> map(31);
+    typename TypeParam::template hashmap<int, int, std::hash<int>> map(31);
     std::vector<std::thread> threads;
 
     for (int thread_id = 0; thread_id < thread_count; ++thread_id) {
@@ -127,10 +144,10 @@ TEST(LockBasedHashmapTest, SupportsConcurrentWritesToDistinctKeys) {
     }
 }
 
-TEST(LockBasedHashmapTest, SupportsConcurrentUpdatesToSharedKeys) {
+TYPED_TEST(LockBasedHashmapTest, SupportsConcurrentUpdatesToSharedKeys) {
     constexpr int thread_count = 8;
     constexpr int iterations = 1000;
-    lock_based_hashmap<int, int, ConstantHash> map(4);
+    typename TypeParam::template hashmap<int, int, ConstantHash> map(4);
     std::vector<std::thread> threads;
 
     for (int thread_id = 0; thread_id < thread_count; ++thread_id) {

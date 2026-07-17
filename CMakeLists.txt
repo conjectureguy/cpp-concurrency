@@ -53,6 +53,9 @@ target_link_libraries(test_spsc
 
 add_executable(test_lock_based_hashmap
     tests/test_lock_based_hashmap.cpp
+    include/cpp_concurrency/hashmap_variants.h
+    include/cpp_concurrency/hashmaps/lock_based_hashmap.h
+    include/cpp_concurrency/hashmaps/lock_based_hashmap_vector.h
 )
 
 target_link_libraries(test_lock_based_hashmap
@@ -95,6 +98,18 @@ add_executable(benchmark_spsc
 )
 
 target_link_libraries(benchmark_spsc
+    PRIVATE
+        cpp_concurrency
+)
+
+add_executable(benchmark_hashmap
+    benchmarks/benchmark_hashmap.cpp
+    include/cpp_concurrency/hashmap_variants.h
+    include/cpp_concurrency/hashmaps/lock_based_hashmap.h
+    include/cpp_concurrency/hashmaps/lock_based_hashmap_vector.h
+)
+
+target_link_libraries(benchmark_hashmap
     PRIVATE
         cpp_concurrency
 )
