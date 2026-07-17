@@ -4,7 +4,9 @@
 
 #ifndef LOCKFREE_OPTIMIZE_MEMORY_ORDERING_SPSC_QUEUE_H
 #define LOCKFREE_OPTIMIZE_MEMORY_ORDERING_SPSC_QUEUE_H
+#include <array>
 #include <atomic>
+#include <cstddef>
 
 template <typename T, std::size_t Capacity>
 class optimize_memory_ordering_spsc_queue {

@@ -8,6 +8,14 @@ Small C++ benchmark project currently comparing SPSC queue implementations:
 - `lock_based_spsc`
 - `recursive_mutex_spsc`
 
+## Layout
+
+- `include/lockfree/queues/spsc/`: SPSC queue implementations.
+- `include/lockfree/hashmaps/`: hashmap implementations.
+- `include/lockfree/spsc_variants.h`: registry used by SPSC tests and benchmarks.
+- `tests/`: GoogleTest coverage for data structures.
+- `benchmarks/`: standalone benchmark executables.
+
 Benchmarks cover same-thread push/pop and concurrent producer-consumer transfer.
 
 ## Results

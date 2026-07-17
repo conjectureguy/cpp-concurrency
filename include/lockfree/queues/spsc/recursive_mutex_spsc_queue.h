@@ -6,6 +6,7 @@
 #define LOCKFREE_RECURSIVE_MUTEX_SPSC_QUEUE_H
 
 #include <array>
+#include <cstddef>
 #include <mutex>
 
 template <typename T, std::size_t Capacity>

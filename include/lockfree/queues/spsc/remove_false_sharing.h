@@ -5,7 +5,9 @@
 #ifndef LOCKFREE_REMOVE_FALSE_SHARING_H
 #define LOCKFREE_REMOVE_FALSE_SHARING_H
 
+#include <array>
 #include <atomic>
+#include <cstddef>
 
 template <typename T, std::size_t Capacity>
 class alignas(64) remove_false_sharing_spsc_queue {

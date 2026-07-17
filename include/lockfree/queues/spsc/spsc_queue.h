@@ -6,6 +6,7 @@
 #define LOCKFREE_SPSC_QUEUE_H
 #include <array>
 #include <atomic>
+#include <cstddef>
 
 template <typename T, std::size_t Capacity>
 class spsc_queue {

@@ -5,7 +5,7 @@
 #ifndef LOCKFREE_LOCK_BASED_SPSC_QUEUE_H
 #define LOCKFREE_LOCK_BASED_SPSC_QUEUE_H
 #include <array>
-#include <atomic>
+#include <cstddef>
 #include <mutex>
 
 // Lock based

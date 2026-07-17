@@ -4,11 +4,11 @@
 #include <cstddef>
 #include <utility>
 
-#include "lockfree/lock_based_spsc_queue.h"
-#include "lockfree/recursive_mutex_spsc_queue.h"
-#include "lockfree/spsc_queue.h"
-#include "lockfree/optimize_memory_ordering_spsc_queue.h"
-#include "lockfree/remove_false_sharing.h"
+#include "lockfree/queues/spsc/lock_based_spsc_queue.h"
+#include "lockfree/queues/spsc/recursive_mutex_spsc_queue.h"
+#include "lockfree/queues/spsc/spsc_queue.h"
+#include "lockfree/queues/spsc/optimize_memory_ordering_spsc_queue.h"
+#include "lockfree/queues/spsc/remove_false_sharing.h"
 
 struct lock_free_spsc_variant {
     static constexpr const char* name = "lock_free_spsc";

@@ -51,18 +51,30 @@ target_link_libraries(test_spsc
         GTest::gtest_main
 )
 
+add_executable(test_lock_based_hashmap
+    tests/test_lock_based_hashmap.cpp
+)
+
+target_link_libraries(test_lock_based_hashmap
+    PRIVATE
+        lockfree
+        GTest::gtest_main
+)
+
 if(LOCKFREE_ENABLE_TSAN)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-        target_compile_options(test_spsc
-            PRIVATE
-                -fsanitize=thread
-                -fno-omit-frame-pointer
-                -g
-        )
-        target_link_options(test_spsc
-            PRIVATE
-                -fsanitize=thread
-        )
+        foreach(test_target IN ITEMS test_spsc test_lock_based_hashmap)
+            target_compile_options(${test_target}
+                PRIVATE
+                    -fsanitize=thread
+                    -fno-omit-frame-pointer
+                    -g
+            )
+            target_link_options(${test_target}
+                PRIVATE
+                    -fsanitize=thread
+            )
+        endforeach()
     else()
         message(WARNING "LOCKFREE_ENABLE_TSAN is only configured for Clang and GCC")
     endif()
@@ -74,12 +86,12 @@ endif()
 
 add_executable(benchmark_spsc
     benchmarks/benchmark_spsc.cpp
-    include/lockfree/lock_based_spsc_queue.h
-    include/lockfree/recursive_mutex_spsc_queue.h
-    include/lockfree/spsc_queue.h
+    include/lockfree/queues/spsc/lock_based_spsc_queue.h
+    include/lockfree/queues/spsc/recursive_mutex_spsc_queue.h
+    include/lockfree/queues/spsc/spsc_queue.h
     include/lockfree/spsc_variants.h
-    include/lockfree/optimize_memory_ordering_spsc_queue.h
-        include/lockfree/remove_false_sharing.h
+    include/lockfree/queues/spsc/optimize_memory_ordering_spsc_queue.h
+    include/lockfree/queues/spsc/remove_false_sharing.h
 )
 
 target_link_libraries(benchmark_spsc
@@ -96,3 +108,4 @@ enable_testing()
 include(GoogleTest)
 
 gtest_discover_tests(test_spsc)
+gtest_discover_tests(test_lock_based_hashmap)
